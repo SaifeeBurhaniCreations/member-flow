@@ -3,8 +3,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { BottomNav } from "@/components/layout/BottomNav";
 import Index from "./pages/Index";
+import Auth from "./pages/Auth";
 import Members from "./pages/Members";
 import MemberDetail from "./pages/MemberDetail";
 import NewMember from "./pages/NewMember";
@@ -18,25 +21,28 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/members" element={<Members />} />
-          <Route path="/members/new" element={<NewMember />} />
-          <Route path="/members/:id" element={<MemberDetail />} />
-          <Route path="/members/:id/edit" element={<NewMember />} />
-          <Route path="/sessions" element={<Sessions />} />
-          <Route path="/sessions/new" element={<NewSession />} />
-          <Route path="/sessions/:id" element={<SessionDetail />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <BottomNav />
-      </BrowserRouter>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/members" element={<ProtectedRoute><Members /></ProtectedRoute>} />
+            <Route path="/members/new" element={<ProtectedRoute><NewMember /></ProtectedRoute>} />
+            <Route path="/members/:id" element={<ProtectedRoute><MemberDetail /></ProtectedRoute>} />
+            <Route path="/members/:id/edit" element={<ProtectedRoute><NewMember /></ProtectedRoute>} />
+            <Route path="/sessions" element={<ProtectedRoute><Sessions /></ProtectedRoute>} />
+            <Route path="/sessions/new" element={<ProtectedRoute><NewSession /></ProtectedRoute>} />
+            <Route path="/sessions/:id" element={<ProtectedRoute><SessionDetail /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <BottomNav />
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
