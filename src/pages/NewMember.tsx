@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -15,12 +15,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useCreateMember, useUpdateMember, useMember } from '@/hooks/useMembers';
 import { HouseColor } from '@/types';
 
 export default function NewMember() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const isEditing = !!id;
+
+  const { data: existingMember, isLoading: loadingMember } = useMember(id);
+  const createMember = useCreateMember();
+  const updateMember = useUpdateMember();
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -34,10 +40,27 @@ export default function NewMember() {
     isActive: true,
   });
 
+  // Populate form when editing
+  useEffect(() => {
+    if (existingMember) {
+      setFormData({
+        fullName: existingMember.fullName,
+        surname: existingMember.surname,
+        houseColor: existingMember.houseColor,
+        address: existingMember.address,
+        itsNumber: existingMember.itsNumber,
+        mobileNumber: existingMember.mobileNumber,
+        grade: existingMember.grade,
+        className: existingMember.className,
+        isActive: existingMember.isActive,
+      });
+    }
+  }, [existingMember]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.fullName || !formData.surname || !formData.itsNumber) {
+    if (!formData.fullName || !formData.surname || !formData.itsNumber || !formData.houseColor) {
       toast({
         title: "Missing required fields",
         description: "Please fill in all required fields",
@@ -46,22 +69,44 @@ export default function NewMember() {
       return;
     }
 
-    setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    toast({
-      title: "Member added successfully",
-      description: `${formData.fullName} ${formData.surname} has been added.`,
-    });
-    
-    navigate('/members');
+    const memberData = {
+      fullName: formData.fullName.trim(),
+      surname: formData.surname.trim(),
+      houseColor: formData.houseColor as HouseColor,
+      address: formData.address.trim(),
+      itsNumber: formData.itsNumber.trim(),
+      mobileNumber: formData.mobileNumber.trim(),
+      grade: formData.grade,
+      className: formData.className,
+      isActive: formData.isActive,
+    };
+
+    try {
+      if (isEditing && id) {
+        await updateMember.mutateAsync({ id, ...memberData });
+      } else {
+        await createMember.mutateAsync(memberData);
+      }
+      navigate('/members');
+    } catch {
+      // Error handled by mutation
+    }
   };
+
+  const isLoading = createMember.isPending || updateMember.isPending;
+
+  if (isEditing && loadingMember) {
+    return (
+      <PageContainer>
+        <PageHeader title="Edit Member" showBack />
+        <div className="p-4 text-center text-muted-foreground">Loading...</div>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer>
-      <PageHeader title="Add Member" showBack />
+      <PageHeader title={isEditing ? "Edit Member" : "Add Member"} showBack />
 
       <form onSubmit={handleSubmit} className="p-4 space-y-6">
         <div className="space-y-4">
@@ -152,7 +197,7 @@ export default function NewMember() {
 
           {/* House Color */}
           <div className="space-y-2">
-            <Label>House Color</Label>
+            <Label>House Color *</Label>
             <Select
               value={formData.houseColor}
               onValueChange={(value: HouseColor) => setFormData({ ...formData, houseColor: value })}
@@ -218,7 +263,7 @@ export default function NewMember() {
         </div>
 
         <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? 'Adding Member...' : 'Add Member'}
+          {isLoading ? (isEditing ? 'Updating...' : 'Adding...') : (isEditing ? 'Update Member' : 'Add Member')}
         </Button>
       </form>
     </PageContainer>

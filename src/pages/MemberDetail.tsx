@@ -4,14 +4,27 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { mockMembers, mockSessions, mockAttendance } from '@/data/mockData';
+import { useMember } from '@/hooks/useMembers';
+import { useSessions } from '@/hooks/useSessions';
+import { useMemberAttendance } from '@/hooks/useAttendance';
 import { Phone, MapPin, Hash, GraduationCap, Edit, Calendar, CheckCircle, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 
 export default function MemberDetail() {
   const { id } = useParams();
-  const member = mockMembers.find((m) => m.id === id);
+  const { data: member, isLoading: loadingMember } = useMember(id);
+  const { data: sessions = [] } = useSessions();
+  const { data: memberAttendance = [] } = useMemberAttendance(id);
+
+  if (loadingMember) {
+    return (
+      <PageContainer>
+        <PageHeader title="Member Details" showBack />
+        <div className="p-4 text-center text-muted-foreground">Loading...</div>
+      </PageContainer>
+    );
+  }
 
   if (!member) {
     return (
@@ -27,8 +40,7 @@ export default function MemberDetail() {
   const initials = `${member.fullName[0]}${member.surname[0]}`.toUpperCase();
 
   // Calculate attendance stats
-  const memberAttendance = mockAttendance.filter((a) => a.memberId === member.id);
-  const totalSessions = mockSessions.length;
+  const totalSessions = sessions.length;
   const attendedSessions = memberAttendance.filter((a) => a.isPresent).length;
   const missedSessions = memberAttendance.filter((a) => !a.isPresent).length;
   const attendancePercentage = totalSessions > 0 
@@ -37,9 +49,8 @@ export default function MemberDetail() {
 
   // Get recent sessions
   const recentSessionIds = memberAttendance.map((a) => a.sessionId);
-  const recentSessions = mockSessions
+  const recentSessions = sessions
     .filter((s) => recentSessionIds.includes(s.id))
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
 
   return (
@@ -80,9 +91,13 @@ export default function MemberDetail() {
         {/* Details */}
         <div className="bg-card rounded-lg border border-border divide-y divide-border animate-slide-up">
           <DetailRow icon={<Hash className="w-4 h-4" />} label="ITS Number" value={member.itsNumber} />
-          <DetailRow icon={<GraduationCap className="w-4 h-4" />} label="Grade & Class" value={`Grade ${member.grade} - Class ${member.className}`} />
-          <DetailRow icon={<Phone className="w-4 h-4" />} label="Mobile" value={member.mobileNumber} />
-          <DetailRow icon={<MapPin className="w-4 h-4" />} label="Address" value={member.address} />
+          <DetailRow 
+            icon={<GraduationCap className="w-4 h-4" />} 
+            label="Grade & Class" 
+            value={member.grade && member.className ? `Grade ${member.grade} - Class ${member.className}` : 'Not set'} 
+          />
+          <DetailRow icon={<Phone className="w-4 h-4" />} label="Mobile" value={member.mobileNumber || 'Not set'} />
+          <DetailRow icon={<MapPin className="w-4 h-4" />} label="Address" value={member.address || 'Not set'} />
           <DetailRow icon={<Calendar className="w-4 h-4" />} label="Member Since" value={format(member.createdAt, 'MMM d, yyyy')} />
         </div>
 

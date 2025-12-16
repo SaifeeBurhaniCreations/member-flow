@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { MemberCard } from '@/components/members/MemberCard';
-import { mockMembers } from '@/data/mockData';
+import { useMembers } from '@/hooks/useMembers';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Plus, Search, Filter } from 'lucide-react';
@@ -15,10 +15,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export default function Members() {
+  const { data: members = [], isLoading } = useMembers();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
 
-  const filteredMembers = mockMembers
+  const filteredMembers = members
     .filter((member) => {
       const matchesSearch = 
         member.fullName.toLowerCase().includes(search.toLowerCase()) ||
@@ -38,7 +39,7 @@ export default function Members() {
     <PageContainer>
       <PageHeader 
         title="Members" 
-        subtitle={`${mockMembers.length} total members`}
+        subtitle={`${members.length} total members`}
         action={
           <Link to="/members/new">
             <Button size="sm" className="gap-1">
@@ -83,9 +84,15 @@ export default function Members() {
 
         {/* Members List */}
         <div className="space-y-2">
-          {filteredMembers.length === 0 ? (
+          {isLoading ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">No members found</p>
+              <p className="text-muted-foreground">Loading members...</p>
+            </div>
+          ) : filteredMembers.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">
+                {members.length === 0 ? 'No members yet. Add your first member!' : 'No members found'}
+              </p>
             </div>
           ) : (
             filteredMembers.map((member) => (

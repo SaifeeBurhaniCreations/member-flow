@@ -1,9 +1,10 @@
-import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { AttendanceMemberCard } from '@/components/attendance/AttendanceMemberCard';
-import { mockSessions, mockMembers, mockAttendance } from '@/data/mockData';
+import { useSession } from '@/hooks/useSessions';
+import { useMembers } from '@/hooks/useMembers';
+import { useSessionAttendance, useToggleAttendance } from '@/hooks/useAttendance';
 import { Calendar, Clock, MapPin, FileText, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -11,20 +12,56 @@ import { useToast } from '@/hooks/use-toast';
 export default function SessionDetail() {
   const { id } = useParams();
   const { toast } = useToast();
-  const session = mockSessions.find((s) => s.id === id);
+  const { data: session, isLoading: loadingSession } = useSession(id);
+  const { data: members = [] } = useMembers();
+  const { data: sessionAttendance = [] } = useSessionAttendance(id);
+  const toggleAttendance = useToggleAttendance();
 
-  const activeMembers = mockMembers.filter((m) => m.isActive);
+  const activeMembers = members.filter((m) => m.isActive);
 
-  // Initialize attendance state from mock data
-  const initialAttendance: Record<string, boolean> = {};
-  activeMembers.forEach((member) => {
-    const existing = mockAttendance.find(
-      (a) => a.sessionId === id && a.memberId === member.id
-    );
-    initialAttendance[member.id] = existing?.isPresent ?? false;
+  // Build attendance map
+  const attendanceMap = new Map<string, boolean>();
+  sessionAttendance.forEach((a) => {
+    attendanceMap.set(a.memberId, a.isPresent);
   });
 
-  const [attendance, setAttendance] = useState(initialAttendance);
+  const presentCount = sessionAttendance.filter(a => a.isPresent).length;
+  const totalCount = activeMembers.length;
+  const attendancePercentage = totalCount > 0 
+    ? Math.round((presentCount / totalCount) * 100) 
+    : 0;
+
+  const handleToggle = async (memberId: string) => {
+    if (!id) return;
+    const currentStatus = attendanceMap.get(memberId) ?? false;
+    const newStatus = !currentStatus;
+
+    try {
+      await toggleAttendance.mutateAsync({
+        memberId,
+        sessionId: id,
+        isPresent: newStatus,
+      });
+      toast({
+        title: newStatus ? "Marked Present" : "Marked Absent",
+        duration: 1500,
+      });
+    } catch {
+      toast({
+        title: "Failed to update attendance",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (loadingSession) {
+    return (
+      <PageContainer>
+        <PageHeader title="Session" showBack />
+        <div className="p-4 text-center text-muted-foreground">Loading...</div>
+      </PageContainer>
+    );
+  }
 
   if (!session) {
     return (
@@ -36,23 +73,6 @@ export default function SessionDetail() {
       </PageContainer>
     );
   }
-
-  const presentCount = Object.values(attendance).filter(Boolean).length;
-  const totalCount = activeMembers.length;
-  const attendancePercentage = totalCount > 0 
-    ? Math.round((presentCount / totalCount) * 100) 
-    : 0;
-
-  const toggleAttendance = (memberId: string) => {
-    setAttendance((prev) => {
-      const newState = { ...prev, [memberId]: !prev[memberId] };
-      toast({
-        title: newState[memberId] ? "Marked Present" : "Marked Absent",
-        duration: 1500,
-      });
-      return newState;
-    });
-  };
 
   return (
     <PageContainer>
@@ -109,16 +129,22 @@ export default function SessionDetail() {
           <p className="text-sm text-muted-foreground mb-4">
             Tap on a member to toggle their attendance
           </p>
-          <div className="space-y-2">
-            {activeMembers.map((member) => (
-              <AttendanceMemberCard
-                key={member.id}
-                member={member}
-                isPresent={attendance[member.id] ?? false}
-                onToggle={() => toggleAttendance(member.id)}
-              />
-            ))}
-          </div>
+          {activeMembers.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">
+              No active members. Add members first!
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {activeMembers.map((member) => (
+                <AttendanceMemberCard
+                  key={member.id}
+                  member={member}
+                  isPresent={attendanceMap.get(member.id) ?? false}
+                  onToggle={() => handleToggle(member.id)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </PageContainer>

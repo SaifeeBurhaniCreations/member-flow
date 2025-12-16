@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useCreateSession } from '@/hooks/useSessions';
 
 export default function NewSession() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const createSession = useCreateSession();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -25,7 +26,7 @@ export default function NewSession() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.location || !formData.date) {
+    if (!formData.name || !formData.location || !formData.date || !formData.startTime || !formData.endTime) {
       toast({
         title: "Missing required fields",
         description: "Please fill in all required fields",
@@ -34,17 +35,19 @@ export default function NewSession() {
       return;
     }
 
-    setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    toast({
-      title: "Session created successfully",
-      description: `${formData.name} has been created.`,
-    });
-    
-    navigate('/sessions');
+    try {
+      await createSession.mutateAsync({
+        name: formData.name.trim(),
+        location: formData.location.trim(),
+        date: new Date(formData.date),
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+        notes: formData.notes.trim() || undefined,
+      });
+      navigate('/sessions');
+    } catch {
+      // Error handled by mutation
+    }
   };
 
   return (
@@ -89,7 +92,7 @@ export default function NewSession() {
           {/* Time */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="startTime">Start Time</Label>
+              <Label htmlFor="startTime">Start Time *</Label>
               <Input
                 id="startTime"
                 type="time"
@@ -98,7 +101,7 @@ export default function NewSession() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="endTime">End Time</Label>
+              <Label htmlFor="endTime">End Time *</Label>
               <Input
                 id="endTime"
                 type="time"
@@ -121,8 +124,8 @@ export default function NewSession() {
           </div>
         </div>
 
-        <Button type="submit" className="w-full" disabled={isLoading}>
-          {isLoading ? 'Creating Session...' : 'Create Session'}
+        <Button type="submit" className="w-full" disabled={createSession.isPending}>
+          {createSession.isPending ? 'Creating Session...' : 'Create Session'}
         </Button>
       </form>
     </PageContainer>
