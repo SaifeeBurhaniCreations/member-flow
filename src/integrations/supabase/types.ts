@@ -14,16 +14,182 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      attendance: {
+        Row: {
+          id: string
+          is_present: boolean | null
+          marked_at: string | null
+          member_id: string
+          session_id: string
+        }
+        Insert: {
+          id?: string
+          is_present?: boolean | null
+          marked_at?: string | null
+          member_id: string
+          session_id: string
+        }
+        Update: {
+          id?: string
+          is_present?: boolean | null
+          marked_at?: string | null
+          member_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      members: {
+        Row: {
+          address: string | null
+          class: string | null
+          created_at: string | null
+          full_name: string
+          grade: string | null
+          house_color: Database["public"]["Enums"]["house_color"]
+          id: string
+          is_active: boolean | null
+          its_number: string
+          mobile_number: string | null
+          profile_photo_url: string | null
+          surname: string
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          class?: string | null
+          created_at?: string | null
+          full_name: string
+          grade?: string | null
+          house_color: Database["public"]["Enums"]["house_color"]
+          id?: string
+          is_active?: boolean | null
+          its_number: string
+          mobile_number?: string | null
+          profile_photo_url?: string | null
+          surname: string
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          class?: string | null
+          created_at?: string | null
+          full_name?: string
+          grade?: string | null
+          house_color?: Database["public"]["Enums"]["house_color"]
+          id?: string
+          is_active?: boolean | null
+          its_number?: string
+          mobile_number?: string | null
+          profile_photo_url?: string | null
+          surname?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          created_at: string | null
+          date: string
+          end_time: string
+          id: string
+          location: string
+          name: string
+          notes: string | null
+          start_time: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          end_time: string
+          id?: string
+          location: string
+          name: string
+          notes?: string | null
+          start_time: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          end_time?: string
+          id?: string
+          location?: string
+          name?: string
+          notes?: string | null
+          start_time?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      house_color: "red" | "blue" | "green" | "yellow"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +316,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      house_color: ["red", "blue", "green", "yellow"],
+    },
   },
 } as const
