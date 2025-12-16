@@ -167,9 +167,9 @@ export default function NewMember() {
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <SelectItem key={i + 1} value={String(i + 1)}>
-                      Grade {i + 1}
+                  {['Z', 'A', 'B', 'C', 'D', 'E'].map((grade) => (
+                    <SelectItem key={grade} value={grade}>
+                      Grade {grade}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -177,21 +177,12 @@ export default function NewMember() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="className">Class</Label>
-              <Select
+              <Input
+                id="className"
                 value={formData.className}
-                onValueChange={(value) => setFormData({ ...formData, className: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {['A', 'B', 'C', 'D'].map((cls) => (
-                    <SelectItem key={cls} value={cls}>
-                      Class {cls}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(e) => setFormData({ ...formData, className: e.target.value })}
+                placeholder="1, 2, 10..."
+              />
             </div>
           </div>
 

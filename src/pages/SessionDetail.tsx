@@ -1,21 +1,37 @@
-import { useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { AttendanceMemberCard } from '@/components/attendance/AttendanceMemberCard';
-import { useSession } from '@/hooks/useSessions';
+import { Button } from '@/components/ui/button';
+import { useSession, useDeleteSession } from '@/hooks/useSessions';
 import { useMembers } from '@/hooks/useMembers';
 import { useSessionAttendance, useToggleAttendance } from '@/hooks/useAttendance';
-import { Calendar, Clock, MapPin, FileText, Users } from 'lucide-react';
+import { Calendar, Clock, MapPin, FileText, Users, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export default function SessionDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { data: session, isLoading: loadingSession } = useSession(id);
   const { data: members = [] } = useMembers();
   const { data: sessionAttendance = [] } = useSessionAttendance(id);
   const toggleAttendance = useToggleAttendance();
+  const deleteSession = useDeleteSession();
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const activeMembers = members.filter((m) => m.isActive);
 
@@ -54,6 +70,16 @@ export default function SessionDetail() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!id) return;
+    try {
+      await deleteSession.mutateAsync(id);
+      navigate('/sessions');
+    } catch {
+      // Error handled by mutation
+    }
+  };
+
   if (loadingSession) {
     return (
       <PageContainer>
@@ -76,7 +102,34 @@ export default function SessionDetail() {
 
   return (
     <PageContainer>
-      <PageHeader title={session.name} showBack />
+      <PageHeader 
+        title={session.name} 
+        showBack 
+        action={
+          <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="destructive" className="gap-1">
+                <Trash2 className="w-4 h-4" />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Session</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete "{session.name}"? This action cannot be undone and will remove all attendance records for this session.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        }
+      />
 
       <div className="p-4 space-y-6">
         {/* Session Info */}
