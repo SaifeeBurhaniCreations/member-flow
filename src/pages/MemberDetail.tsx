@@ -1,21 +1,46 @@
-import { useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useMember } from '@/hooks/useMembers';
+import { useMember, useDeleteMember } from '@/hooks/useMembers';
 import { useSessions } from '@/hooks/useSessions';
 import { useMemberAttendance } from '@/hooks/useAttendance';
-import { Phone, MapPin, Hash, GraduationCap, Edit, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { Phone, MapPin, Hash, GraduationCap, Edit, Calendar, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export default function MemberDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { data: member, isLoading: loadingMember } = useMember(id);
   const { data: sessions = [] } = useSessions();
   const { data: memberAttendance = [] } = useMemberAttendance(id);
+  const deleteMember = useDeleteMember();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const handleDelete = async () => {
+    if (!id) return;
+    try {
+      await deleteMember.mutateAsync(id);
+      navigate('/members');
+    } catch {
+      // Error handled by mutation
+    }
+  };
 
   if (loadingMember) {
     return (
@@ -59,12 +84,35 @@ export default function MemberDetail() {
         title="Member Details" 
         showBack 
         action={
-          <Link to={`/members/${member.id}/edit`}>
-            <Button size="sm" variant="outline" className="gap-1">
-              <Edit className="w-4 h-4" />
-              Edit
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link to={`/members/${member.id}/edit`}>
+              <Button size="sm" variant="outline" className="gap-1">
+                <Edit className="w-4 h-4" />
+                Edit
+              </Button>
+            </Link>
+            <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="destructive" className="gap-1">
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Member</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete {member.fullName} {member.surname}? This action cannot be undone and will remove all attendance records for this member.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         }
       />
 
