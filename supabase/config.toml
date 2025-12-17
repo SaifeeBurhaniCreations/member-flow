@@ -1,1 +1,4 @@
 project_id = "uclwdctwjqfvcpezvgmm"
+
+[functions.s3-signed-url]
+verify_jwt = false

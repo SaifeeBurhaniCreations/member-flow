@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateMember, useUpdateMember, useMember } from '@/hooks/useMembers';
+import { ProfilePhotoUpload } from '@/components/members/ProfilePhotoUpload';
 import { HouseColor } from '@/types';
 
 export default function NewMember() {
@@ -37,6 +38,7 @@ export default function NewMember() {
     mobileNumber: '',
     grade: '',
     className: '',
+    profilePhoto: '',
     isActive: true,
   });
 
@@ -52,6 +54,7 @@ export default function NewMember() {
         mobileNumber: existingMember.mobileNumber,
         grade: existingMember.grade,
         className: existingMember.className,
+        profilePhoto: existingMember.profilePhoto || '',
         isActive: existingMember.isActive,
       });
     }
@@ -78,6 +81,7 @@ export default function NewMember() {
       mobileNumber: formData.mobileNumber.trim(),
       grade: formData.grade,
       className: formData.className,
+      profilePhoto: formData.profilePhoto || undefined,
       isActive: formData.isActive,
     };
 
@@ -109,6 +113,18 @@ export default function NewMember() {
       <PageHeader title={isEditing ? "Edit Member" : "Add Member"} showBack />
 
       <form onSubmit={handleSubmit} className="p-4 space-y-6">
+        {/* Profile Photo Upload */}
+        <div className="flex justify-center py-2">
+          <ProfilePhotoUpload
+            currentPhotoUrl={formData.profilePhoto || undefined}
+            onPhotoUploaded={(url) => setFormData({ ...formData, profilePhoto: url })}
+            initials={formData.fullName && formData.surname 
+              ? `${formData.fullName[0]}${formData.surname[0]}`.toUpperCase() 
+              : '?'}
+            memberId={id}
+          />
+        </div>
+
         <div className="space-y-4">
           {/* Name Fields */}
           <div className="grid grid-cols-2 gap-3">
