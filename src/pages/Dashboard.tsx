@@ -22,10 +22,20 @@ export default function Dashboard() {
   const activeMembers = members.filter(m => m.isActive);
   const totalSessions = sessions.length;
   
-  // Calculate attendance rate
+  // Calculate attendance rate based on total active members
+  const totalActiveMembers = activeMembers.length;
   const presentCount = attendance.filter(a => a.isPresent).length;
-  const attendanceRate = attendance.length > 0 
-    ? Math.round((presentCount / attendance.length) * 100) 
+  // Calculate average attendance rate: sum of (present/totalActiveMembers) for each session
+  const sessionsWithAttendance = sessions.filter(s => 
+    attendance.some(a => a.sessionId === s.id)
+  );
+  const attendanceRate = sessionsWithAttendance.length > 0 && totalActiveMembers > 0
+    ? Math.round(
+        sessionsWithAttendance.reduce((sum, session) => {
+          const sessionPresent = attendance.filter(a => a.sessionId === session.id && a.isPresent).length;
+          return sum + (sessionPresent / totalActiveMembers) * 100;
+        }, 0) / sessionsWithAttendance.length
+      )
     : 0;
 
   // Get latest session
@@ -33,16 +43,16 @@ export default function Dashboard() {
   const latestSessionAttendance = attendance.filter(a => a.sessionId === latestSession?.id);
   const latestPresent = latestSessionAttendance.filter(a => a.isPresent).length;
 
-  // Attendance trends data (last 7 sessions)
+  // Attendance trends data (last 7 sessions) - rate based on total active members
   const trendData = sessions.slice(0, 7).reverse().map(session => {
     const sessionAtt = attendance.filter(a => a.sessionId === session.id);
     const present = sessionAtt.filter(a => a.isPresent).length;
-    const rate = sessionAtt.length > 0 ? Math.round((present / sessionAtt.length) * 100) : 0;
+    const rate = totalActiveMembers > 0 ? Math.round((present / totalActiveMembers) * 100) : 0;
     return {
       name: format(session.date, 'MMM d'),
       attendance: rate,
       present,
-      total: sessionAtt.length,
+      total: totalActiveMembers,
     };
   });
 
@@ -116,7 +126,7 @@ export default function Dashboard() {
           />
           <StatCard
             title="Last Session"
-            value={latestSession ? `${latestPresent}/${latestSessionAttendance.length}` : 'N/A'}
+            value={latestSession ? `${latestPresent}/${totalActiveMembers}` : 'N/A'}
             subtitle="Present"
             icon={<UserCheck className="w-5 h-5 text-warning" />}
           />
